@@ -60,21 +60,21 @@ class ChangeListPanel(wx.Panel):
         sizer.Add(self.splitter, 1, wx.EXPAND)
         self.SetSizer(sizer)
         
-        p2 = DescriptionPanel(self.splitter)
+        descriptionPanel = DescriptionPanel(self.splitter)
         
         panel = wx.Panel(self.splitter, -1)
-        siz = wx.BoxSizer(wx.VERTICAL)
-        self.p1 = ChangesList(panel, p2.text)
-        siz.Add(self.p1, 1, wx.EXPAND)
-        panel.SetSizer(siz)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.changetable = ChangeTable(panel, descriptionPanel.text)
+        sizer.Add(self.changetable, 1, wx.EXPAND)
+        panel.SetSizer(sizer)
         
         self.splitter.AppendWindow(panel, 500)
         
-        self.splitter.AppendWindow(p2, 200)
+        self.splitter.AppendWindow(descriptionPanel, 200)
 
 # The table of changes
-class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
-    def __init__(self, parent, desc=None):
+class ChangeTable(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
+    def __init__(self, parent, descriptionPanel=None):
         wx.ListCtrl.__init__(
             self, parent, -1, 
             style=wx.LC_REPORT|wx.LC_VIRTUAL|wx.LC_HRULES|wx.LC_VRULES
@@ -82,8 +82,7 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
         ListMix.ListCtrlAutoWidthMixin.__init__(self)
         
         self.resultCount = None
-        self.desc = desc
-        self.queryCount = 0
+        self.descriptionPanel = descriptionPanel
         self.resultQ = Queue.Queue()
         self.Refresh()
         
@@ -117,13 +116,13 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
             return
     
     def OnItemSelected(self, event):
-        self.currentItem = event.m_itemIndex
-        if self.desc is not None:
-            self.desc.SetValue("Change:\t" + str(self.search[self.currentItem][3]) + "\n"
-                            "Client:\t" + self.search[self.currentItem][0] + "\n"
-                            "User:\t" + self.search[self.currentItem][1] + "\n"
-                            "Date:\t" + self.search[self.currentItem][2] + "\n\n"
-                            "Description:\n" + self.search[self.currentItem][4] + "\n")
+        currentItem = event.m_itemIndex
+        if self.descriptionPanel is not None:
+            self.descriptionPanel.SetValue("Change:\t" + str(self.search[currentItem][3]) + "\n"
+                            "Client:\t" + self.search[currentItem][0] + "\n"
+                            "User:\t" + self.search[currentItem][1] + "\n"
+                            "Date:\t" + self.search[currentItem][2] + "\n\n"
+                            "Description:\n" + self.search[currentItem][4] + "\n")
 
     def OnColClick(self, event):
         if self.columns[event.GetColumn()] == self.orderedBy:
@@ -437,7 +436,7 @@ class MainFrame(wx.Frame):
         box.Add(self.SearchPanel, 0, flag=wx.EXPAND, border=5)
         
         foo = ChangeListPanel(panel)
-        self.virtlist = foo.p1
+        self.virtlist = foo.changetable
         self.virtlist.resultCount = self.SearchPanel.resultCount
         box.Add(foo, 1, flag=wx.EXPAND, border=5)
 
@@ -512,6 +511,9 @@ class MyApp(wx.App):
         DBThread(queryQ, None)
         frame.Show(True)
 
-
-app = MyApp()
-app.MainLoop()
+if __name__ == '__main__':
+    app = MyApp()
+    app.MainLoop()
+    #import sys,os
+    #import run
+    #run.main(['', os.path.basename(sys.argv[0])] + sys.argv[1:])

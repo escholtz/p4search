@@ -6,7 +6,7 @@ import threading
 
 # Thread that connects to Perforce server, grabs changelists, and inserts
 # them into the local database
-# TODO: Passwords should NOT be stored in settings file, especially in plaintext
+# TODO: Some people might not want their passwords stored in plaintext
 class SyncThread(threading.Thread):
     def __init__(self, syncQ):
         threading.Thread.__init__(self)
