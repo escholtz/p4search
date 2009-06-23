@@ -3,6 +3,13 @@ import sqlite3
 import Queue
 import wx
 
+# We run the SQL queries in a separate thread because they can take up
+# to a few seconds and we want the UI to remain responsive. I did some
+# brief profiling and it seems the query itself is fairly quick but fetching
+# results quite slow. I think it's hitting the disk?
+# TODO: Try to load the database completely into memory
+# TODO: Am I actually creating the proper indices?
+# TODO: Sanitize SQL queries to prevent injection
 class DBThread(threading.Thread):
 	def __init__(self, inputQueue, outputQueue):
 		threading.Thread.__init__(self)
@@ -15,8 +22,6 @@ class DBThread(threading.Thread):
 		
 		self.dbCursor = None
 		self.dbConn = None
-		
-		self.startTime = 0.0
 		
 		self.setDaemon(True)
 		self.start()
@@ -41,7 +46,6 @@ class DBThread(threading.Thread):
 				self.outputQueue = query[2]
 				query = query[0]
 				doneFetch = False
-				#queryCount += 1
 				self.dbCursor.execute(self.queryString)
 			except Exception:
 				if not doneFetch:

@@ -106,7 +106,7 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
 		try:
 			# Look for results without blocking
 			results = self.resultQ.get(False)
-			if results != None and len(results[1]) > 0: # and results[0] == self.queryCount
+			if results != None and len(results[1]) > 0:
 				self.search.extend(results[1])
 				self.SetItemCount(len(self.search))
 				self.resultCount.SetValue(str(len(self.search)) + " Results")
@@ -132,9 +132,6 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
 			self.orderedBy = self.columns[event.GetColumn()]
 			self.orderedDescending = False
 		
-		#if self.columns[event.GetColumn()] == 'Client' or self.columns[event.GetColumn()] == 'User':
-		#	query = self.lastQuery + ' ORDER BY UPPER(' + self.columns[event.GetColumn()] + ')'
-		#else:
 		query = self.lastQuery + ' ORDER BY ' + self.columns[event.GetColumn()]
 		
 		if self.orderedDescending:
@@ -142,7 +139,6 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
 		
 		self.resultQ = Queue.Queue()
 		queryQ.put(["async", query, self.resultQ])
-		#self.queryCount += 1
 		self.SetItemCount(0)
 		self.resultCount.SetValue("0 Results")
 		self.search = []
@@ -157,10 +153,8 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
 
 	def Refresh(self):
 		self.resultQ = Queue.Queue()
-		queryQ.put(["async", 'SELECT * FROM changes', self.resultQ]) # ORDER BY change DESC
-		#self.queryCount += 1
+		queryQ.put(["async", 'SELECT * FROM changes', self.resultQ])
 		self.SetItemCount(0)
-		#self.resultCount.SetValue("0 Results")
 		self.search = []
 	
 	def DoSearch(self, searchString):
@@ -170,7 +164,6 @@ class ChangesList(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
 		self.resultCount.SetValue("0 Results")
 		self.resultQ = Queue.Queue()
 		queryQ.put(["async", self.lastQuery, self.resultQ])
-		#self.queryCount += 1
 		self.search = []
 		self.SetItemCount(0)
 	
@@ -411,7 +404,6 @@ class ConnectionDialog(wx.Dialog):
 		self.thread = p4sync.SyncThread(self.syncQ)
 
 	def OnIdle(self, event):
-		#result = None
 		try:
 			if self.thread is not None:
 				result = self.syncQ.get(False)
@@ -497,7 +489,6 @@ class MainFrame(wx.Frame):
 	def OnCancelSearch(self, event):
 		self.virtlist.SetItemCount(0)
 		self.virtlist.DoSearch('SELECT * FROM changes')
-		#self.SearchPanel.resultCount.SetValue(str(len(self.virtlist.search)) + " Results")
 		self.SearchPanel.search.ShowCancelButton(False)
 		
 	def OnUpdate(self, event):

@@ -1,5 +1,4 @@
 import sqlite3
-#import matplotlib.pyplot as plt
 import matplotlib.pylab as plt
 from datetime import date
 import wx
@@ -15,7 +14,6 @@ class GraphFrame(wx.MiniFrame):
 		wx.MiniFrame.__init__(self, parent, ID, title, pos, (810,670), style)
 		
 		self.queryQ = queryQ
-		#self.resultQ = resultQ
 
 		panel = wx.Panel(self, -1)
 		panel.SetBackgroundColour(wx.Color(255,255,255))
@@ -197,9 +195,6 @@ class GraphFrame(wx.MiniFrame):
 		if sum > 0:
 			for i in xrange(0, len(bins)):
 				bins[i] = float(bins[i]) / float(sum)
-		
-		#print bins
-		#print labels
 		
 		# Alternate bar colors between two shades of blue
 		colors = []
