@@ -515,14 +515,14 @@ class MainFrame(wx.Frame):
 
 
 class P4SearchApp(wx.App):
-
     # Use this as the background color for panels since it seems to be
     # inconsistent across windows versions
     BACKGROUND_COLOR = wx.Color(240,240,240)
+    TITLE = 'Perforce Changelist Search'
     
     def __init__(self):
-        wx.App.__init__(self, redirect=False)
-        frame = MainFrame(None, -1, 'Perforce Changelist Search')
+        wx.App.__init__(self, redirect=True, filename='log.txt')
+        frame = MainFrame(None, -1, self.TITLE)
         frame.CentreOnScreen()
         dbthread.DBThread(queryQ)
         frame.Show(True)
