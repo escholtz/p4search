@@ -27,7 +27,10 @@ class SyncThread(threading.Thread):
             p4.password = self.password
             p4.port = server
             
+            connected = False
             p4.connect()
+            connected = True
+            
             p4.run_login()
             
             # Setup sqlite database connection
@@ -47,7 +50,7 @@ class SyncThread(threading.Thread):
             p4changes = p4.run("changes","-l","-m 1",depot)
             if p4changes is None:
                 # Error - changes command failed
-                self.syncQ.put(1)
+                self.syncQ.put([-1, "Failed. Depot specified correctly?"])
                 return
 
             # find out how many new changelists there are
@@ -67,12 +70,17 @@ class SyncThread(threading.Thread):
                         if change['status'] == 'submitted':
                             newCLCount += 1
                             dbCursor.execute("INSERT INTO changes VALUES (?,?,?,?,?)", (change['client'], change['user'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(change['time']))), str(change['change']), change['desc']))            
-                    dbConn.commit()    
+                    dbConn.commit()
         except Exception, inst:
+            if not connected:
+                self.syncQ.put([-1, "Connect to server failed."])
+            for e in p4.errors:
+                self.syncQ.put([-1, e])
+                return
             print Exception
             print inst
-            self.syncQ.put(1)
+            self.syncQ.put([-1, "Failed."])
             return
 
-        self.syncQ.put(newCLCount + 2)
+        self.syncQ.put([newCLCount, ""])
         return

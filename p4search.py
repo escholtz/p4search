@@ -405,10 +405,10 @@ class ConnectionDialog(wx.Dialog):
                 self.thread.join()
                 self.thread = None
                 
-                if result == 1:
-                    self.testConnection.SetValue("Failed.")
+                if result[1] != "":
+                    self.testConnection.SetValue(result[1])
                 else:
-                    self.testConnection.SetValue("Received " + str(result - 2) + " new changes.")
+                    self.testConnection.SetValue("Received " + str(result[0]) + " new changes.")
                     self.CloseAfterTimer = True
                     self.Timer = time.time()            
                 self.updateButton.Enable()
