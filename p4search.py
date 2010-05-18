@@ -8,7 +8,6 @@ import wx
 import wx.lib.mixins.listctrl as ListMix
 from wx.lib.embeddedimage import PyEmbeddedImage
 from wx.lib.splitter import MultiSplitterWindow
-from wx.lib.wordwrap import wordwrap
 
 # Does the graphing
 import p4graph
@@ -105,8 +104,8 @@ class ChangeTable(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
         try:
             # Look for results without blocking
             results = self.resultQ.get(False)
-            if results != None and len(results[1]) > 0:
-                self.search.extend(results[1])
+            if results != None and len(results) > 0:
+                self.search.extend(results)
                 self.SetItemCount(len(self.search))
                 self.resultCount.SetValue(str(len(self.search)) + " Results")
                 event.RequestMore(True)
@@ -249,12 +248,10 @@ class SearchPanel(wx.Panel):
     def OnAbout(self, evt):
         info = wx.AboutDialogInfo()
         info.Name = "Perforce Changelist Search"
-        info.Version = "0.2"
-        info.Copyright = "Developed by Eddie Scholtz (2009)"
-        info.Description = wordwrap(
-            "\nQuestions? Comments? Requests? Bugs?\n\n             eddie@eddiescholtz.com",
-            350, wx.ClientDC(self))
-        info.WebSite = ("http://www.EddieScholtz.com", "http://www.EddieScholtz.com")
+        info.Version = "0.3"
+        info.Copyright = "eddie@eddiescholtz.com"
+        info.Description = "code.google.com/p/p4search/"
+        info.WebSite = ("eddiescholtz.com", "eddiescholtz.com")
         about = wx.AboutBox(info)
 
     def OnGraph(self, evt):
@@ -508,12 +505,9 @@ class MyApp(wx.App):
         wx.App.__init__(self, redirect=False)
         frame = MainFrame(None, -1, 'Perforce Changelist Search')
         frame.CentreOnScreen()
-        DBThread(queryQ, None)
+        DBThread(queryQ)
         frame.Show(True)
 
 if __name__ == '__main__':
     app = MyApp()
     app.MainLoop()
-    #import sys,os
-    #import run
-    #run.main(['', os.path.basename(sys.argv[0])] + sys.argv[1:])

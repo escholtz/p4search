@@ -32,17 +32,15 @@ class GraphFrame(wx.MiniFrame):
         self.resultQ = Queue.Queue()
         self.queryQ.put(['sync', query, self.resultQ])
         results = self.resultQ.get(True)
-        data = results[1]
         years = ['All']
-        for ele in data:
+        for ele in results:
             years.append(ele[0])
         
         query = "SELECT DISTINCT user FROM changes"
         self.queryQ.put(['sync', query, self.resultQ])
         results = self.resultQ.get(True)
-        data = results[1]
         users = []
-        for ele in data:
+        for ele in results:
             users.append(ele[0])
         users.sort()
         users.insert(0, 'All')
@@ -145,7 +143,6 @@ class GraphFrame(wx.MiniFrame):
         # Execute the SQL query
         self.queryQ.put(['sync', query, self.resultQ])
         results = self.resultQ.get(True)
-        data = results[1]
         
         # Setup bins that we sort the data into
         bins = []
@@ -164,7 +161,7 @@ class GraphFrame(wx.MiniFrame):
                 bins.append(0)
         
         # Loop over the change lists returned by 
-        for ele in data:
+        for ele in results:
             val = int(ele[0])
             
             # Sort years into bins where bin[0] stores the current year, bin[1] stores last year, etc.
@@ -216,6 +213,6 @@ class GraphFrame(wx.MiniFrame):
         plt.xlabel(xaxis)
         plt.ylabel('% of Checkins (Matching Filters)')
         plt.xlim(-1, len(bins))
-        plt.title('Checkins by User: ' + user + ' during Year: ' + year + ' (Sample Size=' + str(len(data)) +')')
+        plt.title('Checkins by User: ' + user + ' during Year: ' + year + ' (Sample Size=' + str(len(results)) +')')
         plt.xticks(range(0,len(labels)), labels)
         plt.savefig(filename)

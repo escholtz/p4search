@@ -29,6 +29,7 @@ class SyncThread(threading.Thread):
             p4.port = server
             
             p4.connect()
+            p4.run_login()
             
             # Setup sqlite database connection
             dbConn = sqlite3.connect('p4db')
