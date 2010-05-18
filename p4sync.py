@@ -6,11 +6,11 @@ import threading
 
 # Thread that connects to Perforce server, grabs changelists, and inserts
 # them into the local database
-# TODO: Some people might not want their passwords stored in plaintext
 class SyncThread(threading.Thread):
-    def __init__(self, syncQ):
+    def __init__(self, syncQ, password):
         threading.Thread.__init__(self)
         self.syncQ = syncQ
+        self.password = str(password)
         self.setDaemon(True)
         self.start()
         
@@ -20,12 +20,11 @@ class SyncThread(threading.Thread):
             config.read('settings.ini')
             server = config.get("Perforce", "Server")
             username = config.get("Perforce", "Username")
-            password = config.get("Perforce", "Password")
             depot = config.get("Perforce", "Depot")
 
             p4 = P4.P4()
             p4.user = username
-            p4.password = password
+            p4.password = self.password
             p4.port = server
             
             p4.connect()

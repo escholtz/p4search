@@ -370,7 +370,6 @@ class ConnectionDialog(wx.Dialog):
         
         config.set("Perforce", "Username", self.Username.GetValue())
         config.set("Perforce", "Server", self.Server.GetValue())
-        config.set("Perforce", "Password", self.Password.GetValue())
         
         depot = self.Depot.GetValue()
         if len(depot) == 0:
@@ -397,7 +396,7 @@ class ConnectionDialog(wx.Dialog):
         config.write(file)
         file.close()
         
-        self.thread = p4sync.SyncThread(self.syncQ)
+        self.thread = p4sync.SyncThread(self.syncQ, self.Password.GetValue())
 
     def OnIdle(self, event):
         try:
