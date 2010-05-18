@@ -9,45 +9,43 @@ import wx.lib.mixins.listctrl as ListMix
 from wx.lib.embeddedimage import PyEmbeddedImage
 from wx.lib.splitter import MultiSplitterWindow
 
-# Does the graphing
 import p4graph
-from dbthread import *
-
 import p4sync
+import dbthread
 
-# Encoded version of the magnifier icon
-magnifier = PyEmbeddedImage(
-    "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAk1J"
-    "REFUOI2VkF9Ik1EYxt9zzvftc479UdNszm/OtKYoNpMarT9EXgRzdtGddFnQRdBNiEHQbeRF"
-    "FyV0EQYFg6ggWF0UUagUc2Fhf3Q2aRfODHIunR6+s31np4tmrfEJ9cDLywsPP573QVDUwMBA"
-    "FWOsC2PsBAALAGwUCoWviqJMh8PhDGwhBAAQCoU8jprao/uP9bft8fW0uOrs9ZrGViZjk3PP"
-    "Hz/8+CP9/WUkEkkaAUgwGKyy2quDJ09fONzc2tbh3m6vxQhLJlm2NjV53PXNnda56Smsqg3J"
-    "RCKhlQMw57x7X29/u9WxzV1lUWRUTFWMh9yuHS0Hj5/o5Jx3GyWQcrlc4+6OvSoAwFKGsqUM"
-    "sHJTe1eP5/7t642GAF3X7RXmymrOBQAAeBtstrKWxGKayrqu240AmDFGeZ5lAQC8LpvV0FTI"
-    "ZxljdCtAKv721RLGmOh5Xig3iIJAH6ZeLzLGUoYASumbu7duzAu6nM4V39gUISBtrGVy4dGb"
-    "SYRQwghA0uk0pRvrqy+ePnHUVDuQd9dOi6WywprPa9lnkUdfzp09835oaPBSNBpNqaq6mEql"
-    "Vv+u6I/qCCFHEEItQggbQmhNCDFPCPlkNptPhcP3Lg4PX71M6fqDWCw2Y5RmS5lMplan03lt"
-    "bCwq+vr6rwQCAf/vF/4FwDlf0TRteWJiHEZGRs/Pzs5Qm80iLywsfP6vJISQXr//wJ14/Jvw"
-    "+XyDAL86QACAi2kkAJBLtlxySwAgYYwPKYqiSpI0ns1m36EySOmQso1LfJvlr/8EK/Hiayip"
-    "MLwAAAAASUVORK5CYII=")
+class Magnifier:
+    # Encoded version of the magnifier icon
+    IMAGE = PyEmbeddedImage(
+        "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAk"
+        "1JREFUOI2VkF9Ik1EYxt9zzvftc479UdNszm/OtKYoNpMarT9EXgRzdtGddFnQRdBNiEHQ"
+        "beRFFyV0EQYFg6ggWF0UUagUc2Fhf3Q2aRfODHIunR6+s31np4tmrfEJ9cDLywsPP573QV"
+        "DUwMBAFWOsC2PsBAALAGwUCoWviqJMh8PhDGwhBAAQCoU8jprao/uP9bft8fW0uOrs9ZrG"
+        "ViZjk3PPHz/8+CP9/WUkEkkaAUgwGKyy2quDJ09fONzc2tbh3m6vxQhLJlm2NjV53PXNnd"
+        "a56Smsqg3JRCKhlQMw57x7X29/u9WxzV1lUWRUTFWMh9yuHS0Hj5/o5Jx3GyWQcrlc4+6O"
+        "vSoAwFKGsqUMsHJTe1eP5/7t642GAF3X7RXmymrOBQAAeBtstrKWxGKayrqu240AmDFGeZ"
+        "5lAQC8LpvV0FTIZxljdCtAKv721RLGmOh5Xig3iIJAH6ZeLzLGUoYASumbu7duzAu6nM4V"
+        "39gUISBtrGVy4dGbSYRQwghA0uk0pRvrqy+ePnHUVDuQd9dOi6WywprPa9lnkUdfzp0983"
+        "5oaPBSNBpNqaq6mEqlVv+u6I/qCCFHEEItQggbQmhNCDFPCPlkNptPhcP3Lg4PX71M6fqD"
+        "WCw2Y5RmS5lMplan03ltbCwq+vr6rwQCAf/vF/4FwDlf0TRteWJiHEZGRs/Pzs5Qm80iLy"
+        "wsfP6vJISQXr//wJ14/Jvw+XyDAL86QACAi2kkAJBLtlxySwAgYYwPKYqiSpI0ns1m36Ey"
+        "SOmQso1LfJvlr/8EK/HiayipMLwAAAAASUVORK5CYII=")
 
 # Start thread for performing SQL queries
 queryQ = Queue.Queue()
 
-# Use this as the background color for panels since it seems to be inconsistent across windows versions
-backgroundColor = wx.Color(240,240,240)
-
-# Panel used to display details of a single changelist (the changelist that is selected)
+# Panel used to display details of a single changelist
+# (the changelist that is selected)
 class DescriptionPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
         self.SetBackgroundColour(wx.Color(255,255,255))
-        self.text = wx.TextCtrl(self, -1, "", style=wx.TE_MULTILINE|wx.TE_READONLY|wx.NO_BORDER|wx.TE_RICH2)
+        self.text = wx.TextCtrl(self, -1, "",
+            style = wx.TE_MULTILINE|wx.TE_READONLY|wx.NO_BORDER|wx.TE_RICH2)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.text, 1, wx.EXPAND)
         self.SetSizer(sizer)
 
-# Panel that contains the table of changes and the description window found below it
+# Panel that contains the table of changes and the description window underneath
 class ChangeListPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -117,11 +115,12 @@ class ChangeTable(wx.ListCtrl, ListMix.ListCtrlAutoWidthMixin):
     def OnItemSelected(self, event):
         currentItem = event.m_itemIndex
         if self.descriptionPanel is not None:
-            self.descriptionPanel.SetValue("Change:\t" + str(self.search[currentItem][3]) + "\n"
-                            "Client:\t" + self.search[currentItem][0] + "\n"
-                            "User:\t" + self.search[currentItem][1] + "\n"
-                            "Date:\t" + self.search[currentItem][2] + "\n\n"
-                            "Description:\n" + self.search[currentItem][4] + "\n")
+            self.descriptionPanel.SetValue("Change:\t" +
+                str(self.search[currentItem][3]) + "\n"
+                "Client:\t" + self.search[currentItem][0] + "\n"
+                "User:\t" + self.search[currentItem][1] + "\n"
+                "Date:\t" + self.search[currentItem][2] + "\n\n"
+                "Description:\n" + self.search[currentItem][4] + "\n")
 
     def OnColClick(self, event):
         if self.columns[event.GetColumn()] == self.orderedBy:
@@ -171,17 +170,21 @@ class SearchPanel(wx.Panel):
         wx.Panel.__init__(self, parent, id)
         box = wx.BoxSizer(wx.VERTICAL)
         
-        self.search = wx.SearchCtrl(self, size=(150,-1), style=wx.TE_PROCESS_ENTER)
+        self.search = wx.SearchCtrl(self, size=(150,-1),
+            style=wx.TE_PROCESS_ENTER)
         box.Add(self.search, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5)
         
         self.searchButton = wx.Button(self, -1, "Search", style=wx.BU_EXACTFIT)
         box.Add(self.searchButton, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 0)
         
-        self.resultCount = wx.TextCtrl(self, -1, "0 Results",style=wx.TE_READONLY|wx.NO_BORDER|wx.TE_CENTRE)
-        self.resultCount.SetBackgroundColour(backgroundColor)
-        box.Add(self.resultCount, 0, wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 5)
+        self.resultCount = wx.TextCtrl(self, -1, "0 Results",
+            style=wx.TE_READONLY|wx.NO_BORDER|wx.TE_CENTRE)
+        self.resultCount.SetBackgroundColour(P4SearchApp.BACKGROUND_COLOR)
+        box.Add(self.resultCount, 0,
+            wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 5)
         
-        # StaticBox and check boxes for the selecting the columns you want to search
+        # StaticBox and check boxes for the selecting the columns
+        # the user wants to be included in the search
         staticBox = wx.StaticBox(self, -1, "Search Columns")
         bsizer = wx.StaticBoxSizer(staticBox, wx.VERTICAL)
         
@@ -228,18 +231,21 @@ class SearchPanel(wx.Panel):
         border.Add(self.SubstringsCB, 0, wx.ALL, 5)
         
         self.updateButton = wx.Button(self, -1, "Sync", style=wx.BU_EXACTFIT)
-        box.Add(self.updateButton, 0, wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 2)
+        box.Add(self.updateButton, 0,
+            wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 2)
         
         self.graphButton = wx.Button(self, -1, "Graph", style=wx.BU_EXACTFIT)
-        box.Add(self.graphButton, 0, wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 2)
+        box.Add(self.graphButton, 0,
+            wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 2)
         
         self.aboutButton = wx.Button(self, -1, "About", style=wx.BU_EXACTFIT)
-        box.Add(self.aboutButton, 0, wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 2)
+        box.Add(self.aboutButton, 0,
+            wx.ALL|wx.ALIGN_BOTTOM|wx.ALIGN_CENTER_HORIZONTAL, 2)
         
         self.Bind(wx.EVT_BUTTON, self.OnGraph, self.graphButton)
         self.Bind(wx.EVT_BUTTON, self.OnAbout, self.aboutButton)
         
-        self.SetBackgroundColour(backgroundColor)
+        self.SetBackgroundColour(P4SearchApp.BACKGROUND_COLOR)
         
         self.SetSizer(box)
         
@@ -256,7 +262,8 @@ class SearchPanel(wx.Panel):
 
     def OnGraph(self, evt):
         if self.win is None:
-            self.win = p4graph.GraphFrame(self, -1, "Perforce Graph", queryQ, style = wx.DEFAULT_FRAME_STYLE)
+            self.win = p4graph.GraphFrame(self, -1, "Perforce Graph",
+                queryQ, style = wx.DEFAULT_FRAME_STYLE)
             self.win.Show(True)
         else:
             self.win.Show(True)
@@ -297,26 +304,29 @@ class ConnectionDialog(wx.Dialog):
         bsizer.Add(sizer, 0, wx.ALL, border=5)
         outer.Add(bsizer, 0, flag=wx.ALIGN_CENTER|wx.ALL, border=5)
         
+        labelFlags = wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL
+        
         label = wx.StaticText(self, -1, "Server:")
-        sizer.Add(label, (0,0), flag=wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, border=2)
+        sizer.Add(label, (0,0), flag=labelFlags, border=2)
 
         self.Server = wx.TextCtrl(self, -1, server, size=(180,-1))
         sizer.Add(self.Server, (0,1), flag=wx.ALIGN_CENTER|wx.ALL, border=2)
 
         label = wx.StaticText(self, -1, "Username:")
-        sizer.Add(label, (1,0), flag=wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, border=2)
+        sizer.Add(label, (1,0), flag=labelFlags, border=2)
 
         self.Username = wx.TextCtrl(self, -1, username, size=(180,-1))
         sizer.Add(self.Username, (1,1), flag=wx.ALIGN_CENTER|wx.ALL, border=2)
 
         label = wx.StaticText(self, -1, "Password:")
-        sizer.Add(label, (2,0), flag=wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, border=2)
+        sizer.Add(label, (2,0), flag=labelFlags, border=2)
 
-        self.Password = wx.TextCtrl(self, -1, "", size=(180,-1), style=wx.TE_PASSWORD)
+        self.Password = wx.TextCtrl(self, -1, "", size=(180,-1),
+            style=wx.TE_PASSWORD)
         sizer.Add(self.Password, (2,1), flag=wx.ALIGN_CENTER|wx.ALL, border=2)
         
         label = wx.StaticText(self, -1, "Depot:")
-        sizer.Add(label, (3,0), flag=wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, border=2)
+        sizer.Add(label, (3,0), flag=labelFlags, border=2)
 
         self.Depot = wx.TextCtrl(self, -1, depot, size=(180,-1))
         sizer.Add(self.Depot, (3,1), flag=wx.ALIGN_CENTER|wx.ALL, border=2)
@@ -325,7 +335,7 @@ class ConnectionDialog(wx.Dialog):
         bsizer.Add(cfu, flag=wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, border=2)
         
         #label = wx.StaticText(self, -1, "Save Directory:")
-        #sizer.Add(label, (4,0), flag=wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, border=2)
+        #sizer.Add(label, (4,0), flag=labelFlags, border=2)
         
         #self.SaveDir = wx.TextCtrl(self, -1, saveDir, size=(180,-1))
         #sizer.Add(self.SaveDir, (4,1), flag=wx.ALIGN_CENTER|wx.ALL, border=2)
@@ -333,8 +343,9 @@ class ConnectionDialog(wx.Dialog):
         #b = wx.Button(self, -1, "Change")#, (50,50))
         #self.Bind(wx.EVT_BUTTON, self.OnButton, b)    
         
-        self.testConnection = wx.TextCtrl(self, -1, "", size=(300, -1), style=wx.TE_READONLY|wx.NO_BORDER|wx.TE_CENTRE)
-        self.testConnection.SetBackgroundColour(backgroundColor)
+        self.testConnection = wx.TextCtrl(self, -1, "", size=(300, -1),
+            style=wx.TE_READONLY|wx.NO_BORDER|wx.TE_CENTRE)
+        self.testConnection.SetBackgroundColour(P4SearchApp.BACKGROUND_COLOR)
         bsizer.Add(self.testConnection, flag=wx.ALIGN_CENTER|wx.ALL, border=2)
         
         buttons = wx.BoxSizer(wx.HORIZONTAL)
@@ -353,7 +364,7 @@ class ConnectionDialog(wx.Dialog):
         sizer.AddGrowableRow(5)
         sizer.AddGrowableRow(6)
         
-        self.SetBackgroundColour(backgroundColor)
+        self.SetBackgroundColour(P4SearchApp.BACKGROUND_COLOR)
 
         self.SetSizer(outer)
         outer.Fit(self)
@@ -408,7 +419,8 @@ class ConnectionDialog(wx.Dialog):
                 if result[1] != "":
                     self.testConnection.SetValue(result[1])
                 else:
-                    self.testConnection.SetValue("Received " + str(result[0]) + " new changes.")
+                    self.testConnection.SetValue("Received " + str(result[0]) +
+                        " new changes.")
                     self.CloseAfterTimer = True
                     self.Timer = time.time()            
                 self.updateButton.Enable()
@@ -440,12 +452,14 @@ class MainFrame(wx.Frame):
         
         self.Bind(wx.EVT_TEXT_ENTER, self.OnDoSearch, self.SearchPanel.search)
         self.Bind(wx.EVT_BUTTON, self.OnDoSearch, self.SearchPanel.searchButton)
-        self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnCancelSearch, self.SearchPanel.search)
+        self.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self.OnCancelSearch,
+            self.SearchPanel.search)
         self.Bind(wx.EVT_BUTTON, self.OnUpdate, self.SearchPanel.updateButton)
         
-        self.SearchPanel.resultCount.SetValue(str(len(self.virtlist.search)) + " Results")
+        self.SearchPanel.resultCount.SetValue(str(len(self.virtlist.search)) +
+            " Results")
         
-        self.SetIcon(magnifier.GetIcon())
+        self.SetIcon(Magnifier.IMAGE.GetIcon())
         
         self.SetMinSize((640,480))
 
@@ -466,7 +480,7 @@ class MainFrame(wx.Frame):
                         blarg = '%' + searchString + '%'
                     else:
                         blarg = searchString
-                    sqlQuery += cb.GetLabelText() + ' LIKE \'' + blarg + '\' OR '
+                    sqlQuery += cb.GetLabelText() + ' LIKE \'' + blarg +'\' OR '
                     boxChecked = True
             
             if not boxChecked:
@@ -494,19 +508,25 @@ class MainFrame(wx.Frame):
         if val == wx.ID_OK:
             self.virtlist.SetItemCount(0)
             self.virtlist.Refresh()
-            self.SearchPanel.resultCount.SetValue(str(len(self.virtlist.search)) + " Results")
+            self.SearchPanel.resultCount.SetValue(
+                str(len(self.virtlist.search)) + " Results")
         
         dlg.Destroy()
 
 
-class MyApp(wx.App):
+class P4SearchApp(wx.App):
+
+    # Use this as the background color for panels since it seems to be
+    # inconsistent across windows versions
+    BACKGROUND_COLOR = wx.Color(240,240,240)
+    
     def __init__(self):
         wx.App.__init__(self, redirect=False)
         frame = MainFrame(None, -1, 'Perforce Changelist Search')
         frame.CentreOnScreen()
-        DBThread(queryQ)
+        dbthread.DBThread(queryQ)
         frame.Show(True)
 
 if __name__ == '__main__':
-    app = MyApp()
+    app = P4SearchApp()
     app.MainLoop()
