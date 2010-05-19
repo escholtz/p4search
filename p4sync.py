@@ -65,12 +65,16 @@ class SyncThread(threading.Thread):
                 # Reset so we can store the actual number of new changelists
                 # (There are gaps and some changelists are pending)
                 newCLCount = 0
-                if p4changes is not None:
-                    for change in p4changes:
-                        if change['status'] == 'submitted':
-                            newCLCount += 1
-                            dbCursor.execute("INSERT INTO changes VALUES (?,?,?,?,?)", (change['client'], change['user'], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(change['time']))), str(change['change']), change['desc']))            
-                    dbConn.commit()
+                for c in p4changes:
+                    if c['status'] == 'submitted' and int(c['change']) > localMaxCL:
+                        newCLCount += 1
+                        dbCursor.execute("INSERT INTO changes VALUES (?,?,?,?,?)",
+                            (c['client'],
+                             c['user'],
+                             time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(c['time']))),
+                             c['change'],
+                             c['desc']))            
+            dbConn.commit()
         except Exception, inst:
             if not connected:
                 self.syncQ.put([-1, "Connect to server failed."])

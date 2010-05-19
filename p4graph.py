@@ -45,14 +45,16 @@ class GraphFrame(wx.MiniFrame):
         users.sort()
         users.insert(0, 'All')
         
-        self.userCombo = wx.ComboBox(panel, -1, size=(140, -1), choices=users, style=wx.CB_READONLY)
+        self.userCombo = wx.ComboBox(panel, -1, size=(140, -1), choices=users,
+            style=wx.CB_READONLY)
         self.userCombo.SetStringSelection('All')
         filterBox.Add(self.userCombo, 0, wx.ALL|wx.ALIGN_CENTER, 0)
         
         text = wx.StaticText(panel, -1, " during Year: ")
         filterBox.Add(text, 0, wx.ALL|wx.ALIGN_CENTER, 0)
         
-        self.yearCombo = wx.ComboBox(panel, -1, size=(50, -1), choices=years, style=wx.CB_READONLY)
+        self.yearCombo = wx.ComboBox(panel, -1, size=(50, -1), choices=years,
+            style=wx.CB_READONLY)
         self.yearCombo.SetStringSelection('All')
         filterBox.Add(self.yearCombo, 0, wx.ALL|wx.ALIGN_CENTER, 0)
         
@@ -60,7 +62,8 @@ class GraphFrame(wx.MiniFrame):
         filterBox.Add(text, 0, wx.ALL|wx.ALIGN_CENTER, 0)
         
         xaxis = ['Year', 'Month', 'Weekday', 'Hour']
-        self.xaxisCombo = wx.ComboBox(panel, -1, size=(80, -1), choices=xaxis, style=wx.CB_READONLY)
+        self.xaxisCombo = wx.ComboBox(panel, -1, size=(80, -1), choices=xaxis,
+            style=wx.CB_READONLY)
         self.xaxisCombo.SetStringSelection('Year')
         filterBox.Add(self.xaxisCombo, 0, wx.ALL|wx.ALIGN_CENTER, 0)
         
@@ -87,7 +90,8 @@ class GraphFrame(wx.MiniFrame):
     
     def OnSave(self, event):
         wildcard = "PNG File (*.png)|*.png|All files (*.*)|*.*"
-        dlg = wx.FileDialog(self, message="Save file as ...", defaultFile="graph.png", style=wx.SAVE, wildcard=wildcard)
+        dlg = wx.FileDialog(self, message="Save file as ...",
+            defaultFile="graph.png", style=wx.SAVE, wildcard=wildcard)
         dlg.SetFilterIndex(0)
         
         if dlg.ShowModal() == wx.ID_OK:
@@ -97,7 +101,9 @@ class GraphFrame(wx.MiniFrame):
         dlg.Destroy()
     
     def OnGenerate(self, event):
-        self.Graph('temp.png', self.yearCombo.GetValue().lower(), self.userCombo.GetValue().lower(), self.xaxisCombo.GetValue().lower())
+        self.Graph('temp.png', self.yearCombo.GetValue().lower(),
+            self.userCombo.GetValue().lower(),
+            self.xaxisCombo.GetValue().lower())
         self.bitmap = wx.Bitmap('temp.png')
         self.picture.SetBitmap(self.bitmap)
 
@@ -108,15 +114,18 @@ class GraphFrame(wx.MiniFrame):
     # Generates a graph of a Perforce database using matplotlib.
     # Arguments:
     #   filename - a string specifying what the graph should be saved as
-    #   year - a string. only include changelists from this year as datapoints. 'all' includes all years.
-    #   developer - a string. only include changelists submitted by this user. 'all' includes all users.
+    #   year - a string. only include changelists from this year as datapoints.
+    #          'all' includes all years.
+    #   developer - a string. only include changelists submitted by this user.
+    #               'all' includes all users.
     #   xaxis - possible values: 'year', 'month', 'weekday', 'hour'
     def Graph(self, filename, year, user, xaxis):
 
         # Build the SQL query
         query = "SELECT strftime(\""
         
-        # We only care about the portion of the date the graph is based on. (year, month, weekday, or hour)
+        # We only care about the portion of the date the graph is based on.
+        # (year, month, weekday, or hour)
         if xaxis == 'year':
             query += '%Y'
         elif xaxis == 'month':
@@ -138,33 +147,33 @@ class GraphFrame(wx.MiniFrame):
                 query += ' AND '
         
         if year != 'all':
-            query += ' date >= \'' + year + '-01-01 00:00:00\' AND date <= \'' + year + '-12-31 23:59:59\''
+            query.append(' date >= \'' + year + '-01-01 00:00:00\' '
+                        'AND date <= \'' + year + '-12-31 23:59:59\'')
         
         # Execute the SQL query
         self.queryQ.put(['sync', query, self.resultQ])
         results = self.resultQ.get(True)
         
         # Setup bins that we sort the data into
-        bins = []
+        labels = []
         if xaxis == 'weekday':
             labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-            for i in xrange(0, 7):
-                bins.append(0)
         elif xaxis == 'hour':
-            labels = ['12am', '', '', '3am', '', '', '6am', '', '', '9am', '', '', '12pm', '', '', '3pm', '', '', '6pm', '', '', '9pm', '', '', '12am' ]
-            # I think hour range is technically 00-24, not sure why
-            for i in xrange(0, 25):
-                bins.append(0)
+            labels = ['12am', '', '', '3am', '', '', '6am', '', '',
+                        '9am','', '', '12pm', '', '', '3pm', '', '',
+                        '6pm', '', '', '9pm', '', '', '12am' ]
         elif xaxis == 'month':
-            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-            for i in xrange(0, 12):
-                bins.append(0)
+            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+        bins = [0] * len(labels)
         
         # Loop over the change lists returned by 
         for ele in results:
             val = int(ele[0])
             
-            # Sort years into bins where bin[0] stores the current year, bin[1] stores last year, etc.
+            # Sort years into bins where bin[0] stores the current year, bin[1]
+            # stores last year, etc.
             if xaxis == 'year':
                 val = date.today().year - val
                 if val >= 0:
@@ -183,7 +192,6 @@ class GraphFrame(wx.MiniFrame):
             # Reverse the order that year values and labels are stored in
             labels.reverse()
             bins.reverse()
-        
         
         sum = 0
         for i in bins:
@@ -209,10 +217,12 @@ class GraphFrame(wx.MiniFrame):
         else:
             align = 'center'
         
-        plt.bar(left=range(0,len(bins)), height=bins, align=align, linewidth=1, color=colors)
+        plt.bar(left=range(0,len(bins)), height=bins, align=align, linewidth=1,
+            color=colors)
         plt.xlabel(xaxis)
         plt.ylabel('% of Checkins (Matching Filters)')
         plt.xlim(-1, len(bins))
-        plt.title('Checkins by User: ' + user + ' during Year: ' + year + ' (Sample Size=' + str(len(results)) +')')
+        plt.title('Checkins by User: ' + user + ' during Year: ' + year +
+            ' (Sample Size=' + str(len(results)) +')')
         plt.xticks(range(0,len(labels)), labels)
         plt.savefig(filename)
